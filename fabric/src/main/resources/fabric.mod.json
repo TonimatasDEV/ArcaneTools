@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "arcanetools",
+  "version": "${modVersion}",
+  "name": "Arcane Tools",
+  "description": "Indestructible, upgradeable tools infused with arcane for Minecraft. Enhance speed, damage, reach, and other abilities using the durability.",
+  "authors": [
+    "TonimatasDEV"
+  ],
+  "contact": {
+    "homepage": "https://github.com/TonimatasDEV/ArcaneTools",
+    "sources": "https://github.com/TonimatasDEV/ArcaneTools",
+    "issues": "https://github.com/TonimatasDEV/ArcaneTools/issues"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.tonimatas.arcanetools.ArcaneToolsFabric"
+    ]
+  },
+  "mixins": [
+    "arcanetools.fabric.mixins.json"
+  ],
+  "depends": {
+    "fabric-api": "*",
+    "minecraft": "${minecraftVersion}"
+  }
+}
