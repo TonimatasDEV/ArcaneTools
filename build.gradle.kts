@@ -1,11 +1,53 @@
+import net.fabricmc.loom.api.LoomGradleExtensionAPI
+
 plugins {
-    // https://fabricmc.net/develop/
-    id("fabric-loom") version "1.11-SNAPSHOT" apply false
-    // https://projects.neoforged.net/neoforged/moddevgradle
-    id("net.neoforged.moddev") version "2.0.115" apply false
+    java
+    id("architectury-plugin") version "3.4-SNAPSHOT"
+    id("dev.architectury.loom") version "1.13-SNAPSHOT" apply false
+    id("com.gradleup.shadow") version "9.3.1" apply false
 }
 
-tasks.register<DefaultTask>("export") {
-    dependsOn(project(":fabric").tasks.named("remapJar"))
-    dependsOn(project(":neoforge").tasks.named("jar"))
+val minecraftVersion: String by extra
+val modVersion: String by extra
+val mavenGroup: String by extra
+val customArchivesBaseName: String by extra
+
+architectury {
+    minecraft = minecraftVersion
+}
+
+allprojects {
+    apply(plugin = "java")
+
+    version = modVersion
+    group = mavenGroup
+}
+
+subprojects {
+    apply(plugin = "dev.architectury.loom")
+    apply(plugin = "architectury-plugin")
+
+    base {
+        archivesName.set(customArchivesBaseName + project.name)
+    }
+
+    configure<LoomGradleExtensionAPI> {
+        silentMojangMappingsLicense()
+    }
+
+    dependencies {
+        "minecraft"("com.mojang:minecraft:$minecraftVersion")
+        "mappings"(project.the<LoomGradleExtensionAPI>().officialMojangMappings())
+    }
+
+    java {
+        withSourcesJar()
+
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    tasks.withType<JavaCompile> {
+        options.release.set(21)
+    }
 }

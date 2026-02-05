@@ -1,6 +1,7 @@
 # Minecraft
 runs
 run
+common/src/generated/resources/.cache
 
 # GRADLE
 .gradle

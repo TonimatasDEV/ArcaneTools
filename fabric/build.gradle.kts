@@ -1,50 +1,57 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import net.fabricmc.loom.task.RemapJarTask
+
 plugins {
-    id("multiloader-loader")
-    id("fabric-loom")
+    id("com.gradleup.shadow")
 }
-
-val minecraftVersion: String by extra
-val parchmentMinecraft: String by extra
-val parchmentVersion: String by extra
-val fabricLoaderVersion: String by extra
-val fabricVersion: String by extra
-
-dependencies {
-    minecraft("com.mojang:minecraft:${minecraftVersion}")
-
-    mappings(loom.layered {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-${parchmentMinecraft}:${parchmentVersion}@zip")
-    })
-
-    modImplementation("net.fabricmc:fabric-loader:${fabricLoaderVersion}")
-    modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricVersion}")
+architectury {
+    platformSetupLoomIde()
+    fabric()
 }
 
 loom {
-    val aw = project(":common").file("src/main/resources/arcanetools.accesswidener")
+    accessWidenerPath.set(project(":common").loom.accessWidenerPath)
+}
 
-    if (aw.exists()) {
-        accessWidenerPath.set(aw)
-    }
+val minecraftVersion: String by extra
+val fabricApiVersion: String by extra
+val fabricLoaderVersion: String by extra
+val modVersion: String by extra
 
-    mixin {
-        defaultRefmapName.set("arcanetools.refmap.json")
-    }
-    
-    runs {
-        named("client") {
-            client()
-            configName = "Fabric Client"
-            ideConfigGenerated(true)
-            runDir("runs/client")
-        }
+val common: Configuration by configurations.creating
+val shadowCommon: Configuration by configurations.creating
 
-        named("server") {
-            server()
-            configName = "Fabric Server"
-            ideConfigGenerated(true)
-            runDir("runs/server")
-        }
+configurations["compileClasspath"].extendsFrom(common)
+configurations["runtimeClasspath"].extendsFrom(common)
+configurations["developmentFabric"].extendsFrom(common)
+
+dependencies {
+    modImplementation("net.fabricmc:fabric-loader:$fabricLoaderVersion")
+
+    // Dependencies (OPTIONAL)
+    modApi("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion+$minecraftVersion") // Fabric API
+
+    common(project(path = ":common", configuration = "namedElements")) { isTransitive = false }
+    shadowCommon(project(path = ":common", configuration = "transformProductionFabric")) { isTransitive = false }
+}
+
+tasks.withType<ProcessResources> {
+    val replaceProperties = mapOf(
+        "modVersion" to modVersion, "minecraftVersion" to minecraftVersion)
+
+    inputs.properties(replaceProperties)
+
+    filesMatching("fabric.mod.json") {
+        expand(replaceProperties)
     }
+}
+
+tasks.withType<ShadowJar> {
+    configurations = listOf(shadowCommon)
+    archiveClassifier.set("dev-shadow")
+}
+
+tasks.withType<RemapJarTask> {
+    val shadowTask = tasks.shadowJar.get()
+    inputFile.set(shadowTask.archiveFile)
 }

@@ -1,51 +1,56 @@
-import org.gradle.internal.extensions.stdlib.capitalized
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
-    id("multiloader-loader")
-    id("net.neoforged.moddev")
+    id("com.gradleup.shadow")
 }
 
+val minecraftVersion: String by extra
 val neoforgeVersion: String by extra
-val parchmentMinecraft: String by extra
-val parchmentVersion: String by extra
+val modVersion: String by extra
 
-neoForge {
-    version = neoforgeVersion
-    val at = project(":common").file("src/main/resources/META-INF/accesstransformer.cfg")
+architectury {
+    platformSetupLoomIde()
+    neoForge()
+}
 
-    if (at.exists()) {
-        accessTransformers.from(at.absolutePath)
-    }
+loom {
+    accessWidenerPath.set(project(":common").loom.accessWidenerPath)
+}
 
-    parchment {
-        minecraftVersion = parchmentMinecraft
-        mappingsVersion = parchmentVersion
-    }
+val common: Configuration by configurations.creating
+val shadowCommon: Configuration by configurations.creating
 
-    runs {
-        configureEach {
-            systemProperty("neoforge.enabledGameTestNamespaces", "arcanetools")
-            ideName = "NeoForge ${this.name.capitalized()} (${project.path})" // Unify the run config names with fabric
-        }
+configurations["compileClasspath"].extendsFrom(common)
+configurations["runtimeClasspath"].extendsFrom(common)
+configurations["developmentNeoForge"].extendsFrom(common)
 
-        create("client") {
-            client()
-        }
+repositories {
+    maven(url = "https://maven.neoforged.net/")
+}
 
-        create("data") {
-            data()
-        }
+dependencies {
+    neoForge("net.neoforged:neoforge:$neoforgeVersion")
 
-        create("server") {
-            server()
-        }
-    }
+    common(project(path = ":common", configuration = "namedElements")) { isTransitive = false }
+    shadowCommon(project(path = ":common", configuration = "transformProductionNeoForge")) { isTransitive = false }
+}
 
-    mods {
-        create("arcanetools") {
-            sourceSet(sourceSets.main.get())
-        }
+tasks.withType<ProcessResources> {
+    val replaceProperties = mapOf("modVersion" to modVersion, "minecraftVersion" to minecraftVersion)
+    inputs.properties(replaceProperties)
+
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(replaceProperties)
     }
 }
 
-sourceSets.main.get().resources { srcDir("src/generated/resources") }
+tasks.withType<ShadowJar> {
+    configurations = listOf(shadowCommon)
+    archiveClassifier.set("dev-shadow")
+}
+
+tasks.withType<RemapJarTask> {
+    val shadowTask = tasks.shadowJar.get()
+    inputFile.set(shadowTask.archiveFile)
+}
