@@ -9,8 +9,6 @@ plugins {
 
 val minecraftVersion: String by extra
 val modVersion: String by extra
-val mavenGroup: String by extra
-val customArchivesBaseName: String by extra
 
 architectury {
     minecraft = minecraftVersion
@@ -20,7 +18,7 @@ allprojects {
     apply(plugin = "java")
 
     version = modVersion
-    group = mavenGroup
+    group = "dev.tonimatas.arcanetools"
 }
 
 subprojects {
@@ -28,7 +26,7 @@ subprojects {
     apply(plugin = "architectury-plugin")
 
     base {
-        archivesName.set(customArchivesBaseName + project.name)
+        archivesName.set("ArcaneTools-" + project.name)
     }
 
     configure<LoomGradleExtensionAPI> {

@@ -17,6 +17,9 @@
   "entrypoints": {
     "main": [
       "dev.tonimatas.arcanetools.ArcaneToolsFabric"
+    ],
+    "fabric-datagen": [
+      "dev.tonimatas.arcanetools.data.ModDataGenerators"
     ]
   },
   "mixins": [
